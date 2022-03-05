@@ -1,0 +1,1605 @@
+modules:
+  - docassemble.income.income
+---
+include:
+  - docassemble.AssemblyLine:al_package.yml
+  - docassemble.ALMassachusetts:al_massachusetts.yml
+  - docassemble.MassAccess:massaccess.yml
+---
+metadata:
+  title: |
+    Probate and Family Court Financial statement (short form) (CJD 301S)
+  short title: |
+    Financial Statement (short form)
+  tags:
+    - FA-00-00-00-00
+  authors:
+    - Caroline Robinson
+    - Lily Yang
+    - Jeff Wolf
+    - Oonagh Doherty
+---
+mandatory: True
+comment: |
+  This contains metadata that will not be overwritten if this YAML file is included in another
+  file. Each file gets its own key in the interview_metadata dictionary.
+  Most keys are not currently used at runtime, other than "allowed courts".
+code: |
+  interview_metadata
+  if not defined("interview_metadata['Financial_statement_short_form']"):
+    interview_metadata.initializeObject("Financial_statement_short_form")
+    interview_metadata["Financial_statement_short_form"].update({
+      "al_weaver_version": "1.5.0",
+      "generated on": "2022-01-16",
+      "title": "Probate and Family Court Financial statement (short form) (CJD 301S)",
+      "short title": "Financial Statement (short form)",
+      "description": "You must file this form in all cases in iteh Probate and Family Court where money or support is an issue and your annual income is less than $75,000.",
+      "original_form": "https://courtforms.jud.state.ma.us/publicforms/PFC0002",
+      "allowed courts": [
+        "Probate and Family Court",
+      ],
+      "categories": [
+        "FA-00-00-00-00",
+      ],        
+      "logic block variable": "interview_order_Financial_statement_short_form",
+      "attachment block variable": "Financial_statement_short_form_attachment",
+      "typical role": "unknown",
+    })
+---
+code: |
+  interview_metadata['main_interview_key'] =  'Financial_statement_short_form'
+---
+code: |
+  # This controls the default country and list of states in address field questions
+  AL_DEFAULT_COUNTRY = "US"
+---
+code: |
+  # This controls the default state in address field questions
+  AL_DEFAULT_STATE = "MA"
+---
+code: |
+  github_repo_name =  'docassemble-FinancialStatementShortForm'
+---
+code: |
+  interview_short_title = "Describe your financial situation"
+---
+code: |
+  al_form_type = 'other'
+---
+objects:
+  - users: ALPeopleList.using(ask_number=True,target_number=1)
+  - employers: JobList.using(ask_number=True,target_number=employer_number,
+        complete_attribute='period')
+---
+sections:
+  - review_Financial_statement_short_form: Review your answers
+---
+#################### Interview order #####################
+comment: |
+  Controls order and branching logic for questions specific to this form
+id: interview_order_Financial_statement_short_form
+code: |
+  # Set the allowed courts for this interview
+  allowed_courts = interview_metadata["Financial_statement_short_form"]["allowed courts"]
+  nav.set_section('review_Financial_statement_short_form')
+  # Below sets the user_role by asking a question.
+  # You can set user_role directly instead to either 'plaintiff' or 'defendant'
+  if gross_annual_income >= 75000:
+    income_too_high
+  collect_documents
+  legal_court_document_reminder
+  if employment_type['employed']:
+    employers.gather()
+  set_progress(11)
+  user_ask_role
+  trial_court.division
+  docket_number
+  plaintiffs.gather()
+  defendants.gather()
+  users.gather()
+  set_parts(subtitle=str(users))
+  set_progress(22)
+  users[0].address.address
+  users[0].phone_number
+  set_progress(33)
+  set_progress(44)
+  signature_date
+  creditors.gather()
+  set_progress(55)
+  attorney_signature_date
+  attorneys.gather()
+  attorneys[0].address.address
+  set_progress(66)
+  users_social_security_number
+  exemptions_federal_income_tax
+  assets_real_estate_address
+  liability_incurred
+  attorneys[0].phone_number
+  interview_order_Financial_statement_short_form = True
+---
+###################### Main order ######################
+comment: |
+  This block includes the logic for standalone interviews.
+  Delete mandatory: True to include in another interview
+mandatory: True
+code: |
+  al_intro_screen
+  Financial_statement_short_form_intro
+  interview_order_Financial_statement_short_form
+  signature_date
+  # Save anonymized interview statistics (customize the saved data below)
+  store_variables_snapshot(data={'zip': users[0].address.zip})
+  Financial_statement_short_form_preview_question
+  basic_questions_signature_flow
+  attorneys[0].signature
+  users[0].signature
+  Financial_statement_short_form_download
+---
+comment: |
+  This question is used to introduce your interview. Please customize
+id: Probate_and_Family_Court_Financial_statement_short_form_CJD_301S
+continue button field: Financial_statement_short_form_intro
+question: |
+  Probate and Family Court Financial statement (short form) (CJD 301S)
+subquestion: |
+  The Probate and Family Court needs a Financial Statement from each person in:
+  
+  * divorce cases,
+  * separate support cases,
+  * custody cases,
+  * child support cases, 
+  * hearings that involve division of property, and
+  * other financial matters.
+  
+  If your yearly income, is less than $75,000, keep going. We will help you complete the short form. 
+  
+  If your income is more than $75,000 a year, you need to use the Financial Statement long form.
+  
+  What is your yearly income **before** taxes?
+fields:  
+  - "Your annual income before taxes": gross_annual_income
+    datatype: currency 
+---
+id: Kickout more than 75,000 
+question: |
+  You need to use the long form Financial Statement
+subquestion: |
+  If your yearly income, before taxes, is $75,000  or more, you cannot use the Financial Statement short form.
+  
+  You need the Financial Statement [Long Form](https://www.mass.gov/info-details/probate-and-family-court-financial-statement-long-form-cjd-301l) and you should probably [talk to a lawyer](https://masslrf.org). 
+ 
+sets: income_too_high
+back button label: |
+  Wait, go back
+buttons:
+  - Learn More: exit
+    url: https://www.mass.gov/info-details/probate-and-family-court-financial-statement-long-form-cjd-301l
+---
+id: Collect documents
+question: | 
+  Gather documents
+subquestion: |
+  The court needs to know about your:
+  
+    * income,
+    * expenses,
+    * debts and 'liabilities', and 
+    * anything you own that has financial value. These things are 'assets.' 
+  
+  To make it easier to answer questions about your finances, gather documents like:
+    
+    * Pay stubs for the last 12 months, if you have a salary.
+    * Gas and electric bills, for the last 12 months.
+    * Telephone bills, for the last 3 months.
+    * Bank statements for the last 3 months.
+    * Tax returns for the last year.
+    * Most recent mortgage statement, deed or other document that states the date of purchase, price and lot number, if you own a house or land.
+    * Loan documents.
+continue button field: collect_documents
+---
+id: legal document reminder
+question: |
+  Please remember
+
+subquestion: |
+  We are filling out legal documents that you will be filing in a court of law.
+  
+  Be sure that all your answers are true, as far as you know. 
+continue button field: legal_court_document_reminder
+---
+id: Income from employment
+question: |
+  Income
+subquestion: |
+  Start with your income from employment.
+  
+  Who do you work for?
+fields:
+  - no label: employment_type
+    datatype: checkboxes
+    choices:
+    - I work for at least 1 employer: employed
+    - I am self-employed: self
+    none of the above: |
+      I am unemployed
+---
+id: Employer information
+generic object: Individual
+question: | 
+  % if employers.target_number > 1:
+  Tell me about your ${ ordinal(i) } job.
+  % else:
+  Tell me about your job.
+  % endif
+subquestion: |  
+  Look at your most recent pay stubs.
+fields:
+  - Employer's name: employers[i].employer
+  - Employer's address: employers[i].employer_address
+    required: False
+    address autocomplete: True
+  - Phone number of employer: employers[i].employer_phone
+    required: False
+  - Is this an hourly job?: employers[i].is_hourly
+    datatype: yesno
+  - Hourly rate: employers[i].hourly_rate
+    datatype: currency
+    show if: employers[i].is_hourly
+    hint: $/hour
+  - Average number of hours worked each pay check: employers[i].hours_per_period
+    datatype: integer
+    show if: employers[i].is_hourly    
+  - Gross pay each typical pay check: employers[i].gross_pay
+    datatype: currency    
+  - How often do you get paid?: employers[i].period
+    datatype: integer
+    code: |
+      period_list()
+
+---
+id: Screen two
+question: |
+  Screen two
+fields:
+  - "Your Social Security Number": users_social_security_number
+    maxlength: 19
+  - "Your date of birth": users_date_of_birth
+    datatype: date
+  - "Number of children": users_children_number
+    datatype: number
+  - "Occupation": users_occupation
+    maxlength: 32
+  - "Health insurance": has_health_insurance
+    datatype: yesno
+  - "Health insurance provider": health_insurance_provider
+    maxlength: 58
+  - "Salary": base_pay_is_salary
+    datatype: yesno
+  - "Wages": base_pay_is_wages
+    datatype: yesno
+  - "Base pay": income_base_pay_amount
+    datatype: currency
+    min: 0
+  - "Overtime": income_overtime_amount
+    datatype: currency
+    min: 0
+  - "Part-time": income_part_time_amount
+    datatype: currency
+    min: 0
+  - "Income from self-employment": income_self_employment_amount
+    datatype: currency
+    min: 0
+  - "Tips": income_tips_amount
+    datatype: currency
+    min: 0
+  - "Bonuses": bonuses
+    datatype: yesno
+  - "Commissions": commissions
+    datatype: yesno
+  - "Income  from commissions and bonuses": income_commissions_bonuses_amount
+    datatype: currency
+    min: 0
+  - "Interest": interest
+    datatype: yesno
+  - "Dividends": dividends
+    datatype: yesno
+  - "Income from dividends and interest": income_dividends_interest_amount
+    datatype: currency
+    min: 0
+  - "Trusts": trusts
+    datatype: yesno
+  - "Annuities": annuities
+    datatype: yesno
+  - "Income from trusts and annuities": income_trusts_annuities_amount
+    datatype: currency
+    min: 0
+  - "Pensions": pensions
+    datatype: yesno
+  - "Retirement funds": retirement_funds
+    datatype: yesno
+  - "Income from pensions and retirement accounts": income_pensions_retirement_amount
+    datatype: currency
+    min: 0
+  - "Social Security": income_social_security_amount
+    datatype: currency
+    min: 0
+  - "Disability": disability
+    datatype: yesno
+  - "Unemployment Insurance": unemployment_insurance
+    datatype: yesno
+  - "Workers Compensation": workers_compensation
+    datatype: yesno
+  - "Income from disability, Unemployment and Workers Comp": income_disability_ui_workers_comp_amount
+    datatype: currency
+    min: 0
+  - "Income from public benefits": income_public_benefits_amount
+    datatype: currency
+    min: 0
+  - "Child support": child_support
+    datatype: yesno
+  - "Alimony actually received": alimony_actually_received
+    datatype: yesno
+  - "Income from child support and alimony": income_child_support_alimony_amount
+    datatype: currency
+    min: 0
+  - "Rental income": income_rental_amount
+    datatype: currency
+    min: 0
+  - "Income from royalties": income_royalties_amount_amount
+    datatype: currency
+    min: 0
+  - "Household member contributions": income_household_member_contributions_amount
+    datatype: currency
+    min: 0
+  - "Income1 other amount": income_other1_amount
+    datatype: currency
+    min: 0
+  - "Income2 other amount": income_other2_amount
+    datatype: currency
+    min: 0
+  - "Income other sources": income_other_sources
+    input type: area
+    maxlength: 144
+  - "Total gross weekly income": total_gross_weekly_income_amount
+    datatype: currency
+    min: 0
+---
+id: Screen three
+question: |
+  Screen three
+fields:
+  - "Number of exemptions for federal income tax": exemptions_federal_income_tax
+    datatype: number
+  - "Deductions from federal income tax": deductions_federal_income_tax_amount
+    datatype: currency
+    min: 0
+  - "Number of exemptions for state income tax": exemptions_state_income_tax
+    datatype: number
+  - "Deductions from state income tax": deductions_state_income_tax_amount
+    datatype: currency
+    min: 0
+  - "Deductions for FICA or Medicare": deductions_fica_medicare_amount
+    datatype: currency
+    min: 0
+  - "Deductions for health insurance": deductions_medical_insurance_amount
+    datatype: currency
+    min: 0
+  - "Deductions for union dues": deductions_union_dues_amount
+    datatype: currency
+    min: 0
+  - "Total deductions": deductions_total_amount
+    datatype: currency
+    min: 0
+  - "Adjusted net weekly income": adjusted_net_weekly_income_amount
+    datatype: currency
+    min: 0
+  - "Deduction for repaying loans": deduction_loan_repayment_yes
+    datatype: yesno
+  - "Deduction for savings": deduction_savings_yes
+    datatype: yesno
+  - "Deductions for credit union, loans and savings": deductions_credit_union_loan_savings_amount
+    datatype: currency
+    min: 0
+  - "Deductions for savings": deductions_savings_amount
+    datatype: currency
+    min: 0
+  - "Deductions for retirement": deductions_retirement_amount
+    datatype: currency
+    min: 0
+  - "Other deductions": other_deductions_specifics
+    maxlength: 44
+  - "Deductions for child support compensation 401k etc": deductions_child_support_compensation_401k_etc_amount
+    datatype: currency
+    min: 0
+  - "Other deductions total": other_deductions_total_amount
+    datatype: currency
+    min: 0
+  - "Net weekly income": net_weekly_income_amount
+    datatype: currency
+    min: 0
+  - "Gross yearly income last year": gross_yearly_income_last_year_amount
+    datatype: currency
+    min: 0
+  - "Years paid into social security": years_paid_into_social_security
+    datatype: number
+  - "Life insurance": expense_life_insurance_amount
+    datatype: currency
+    min: 0
+  - "Rent": expense_rent_amount
+    datatype: currency
+    min: 0
+  - "Health insurance not deducted from your pay": expense_medical_insurance_amount
+    datatype: currency
+    min: 0
+  - "Homeowners or renters insurance": expense_home_insurance_amount
+    datatype: currency
+    min: 0
+  - "Uninsured medical expenses": expense_medical_uninsured_amount
+    datatype: currency
+    min: 0
+  - "Maintenance": expense_maintenance_amount
+    datatype: currency
+    min: 0
+  - "Heat": expense_heat_amount
+    datatype: currency
+    min: 0
+  - "Toiletries": expense_toiletries_amount
+    datatype: currency
+    min: 0
+  - "Electricity and gas": expense_electricity_gas_amount
+    datatype: currency
+    min: 0
+  - "Motor vehicles expense": expense_motor_vehicles_amount
+    datatype: currency
+    min: 0
+  - "Phone": expense_phone_amount
+    datatype: currency
+    min: 0
+  - "Car payment": expense_motor_vehicle_payment_amount
+    datatype: currency
+    min: 0
+  - "Water and sewer": expense_water_sewer_amount
+    datatype: currency
+    min: 0
+  - "Child care": expense_child_care_amount
+    datatype: currency
+    min: 0
+  - "Food": expense_food_amount
+    datatype: currency
+    min: 0
+  - "House supplies": expense_house_supplies_amount
+    datatype: currency
+    min: 0
+  - "Other expense": expense_other_amount
+    datatype: currency
+    min: 0
+  - "Other expenses": expense_others_amount
+    datatype: currency
+    min: 0
+  - "Laundry and cleaning": expense_laundry_cleaning_amount
+    datatype: currency
+    min: 0
+  - "Other expenses": expenses_other_explanation
+    maxlength: 34
+  - "Clothing": expense_clothing_amount
+    datatype: currency
+    min: 0
+  - "Total weekly expenses": total_weekly_expenses_amount
+    datatype: currency
+    min: 0
+  - "Legal fees": legal_fees_amount
+    datatype: currency
+    min: 0
+  - "Legal fees incurred to date against retainer amount": legal_fees_incurred_to_date_against_retainer_amount
+    datatype: currency
+    min: 0
+  - "Legal fees minimum": legal_fees_total_miniimum_amount
+    datatype: currency
+    min: 0
+  - "Legal fees maximum": legal_fees_total_maximum_amount
+    datatype: currency
+    min: 0
+---
+id: Screen four
+question: |
+  Screen four
+fields:
+  - "Real estate address": assets_real_estate_address
+    maxlength: 60
+  - "Name on title": assets_real_estate_name_on_title
+    maxlength: 50
+  - "Fair market value": assets_real_estate_fair_market_value
+    datatype: currency
+    min: 0
+  - "Mortgage value": assets_real_estate_mortgage_value
+    datatype: currency
+    min: 0
+  - "Equity": assets_real_estate_equity_value
+    datatype: currency
+    min: 0
+  - "Motor vehicle fair market value": assets_motor_vehicle_fair_market_value
+    datatype: currency
+    min: 0
+  - "Motor vehicle loan amount": assets_motor_vehicle_loan_amount
+    datatype: currency
+    min: 0
+  - "Motor vehicle equity": assets_motor_vehicle_equity_value
+    datatype: currency
+    min: 0
+  - "Motor vehicle1 fair market value": assets_motor_vehicle1_fair_market_value
+    datatype: currency
+    min: 0
+  - "Motor vehicle1 loan": assets_motor_vehicle1_loan_amount
+    datatype: currency
+    min: 0
+  - "Motor vehicle1 equity": assets_motor_vehicle1_equity_value
+    datatype: currency
+    min: 0
+  - "Value of your Retirement plan": assets_retirement_plan_value
+    datatype: currency
+    min: 0
+  - "Value of your retirement plan1": assets_retirement_plan1_value
+    datatype: currency
+    min: 0
+  - "Value of your  retirement plan2": assets_retirement_plan2_value
+    datatype: currency
+    min: 0
+  - "Retirement plan name and account number": assets_retirement_plan_name_and_account_number
+    input type: area
+    maxlength: 260
+  - "Deferred annuity plan value": assets_tax_deferred_annuity_plan_value
+    datatype: currency
+    min: 0
+  - "Life insurance": assets_life_insurance
+    datatype: currency
+    min: 0
+  - "Account name and number": assets_account_name_and_number
+    maxlength: 66
+  - "Account value": assets_account_value
+    datatype: currency
+    min: 0
+  - "Account name and number1": assets_account_name_and_number1
+    maxlength: 66
+  - "Account value1": assets_account_value1
+    maxlength: 15
+  - "Account name and number2": assets_account_name_and_number2
+    maxlength: 66
+  - "Account value2": assets_account_value2
+    maxlength: 16
+  - "Assets stocks and bonds": assets_stocks_and_bonds
+    maxlength: 66
+  - "Assets stocks and bonds value": assets_stocks_and_bonds_value
+    datatype: currency
+    min: 0
+  - "Assets stocks and bonds1": assets_stocks_and_bonds1
+    maxlength: 66
+  - "Assets stocks and bonds value1": assets_stocks_and_bonds_value1
+    maxlength: 16
+  - "Total assets value": total_assets_value
+    datatype: currency
+    min: 0
+---
+id: Screen five
+question: |
+  Screen five
+fields:
+  - "Liability incurred": liability_incurred
+    datatype: date
+  - "Liability weekly payment amount": liability_weekly_payment_amount
+    datatype: currency
+    min: 0
+  - "Liability": liability
+    maxlength: 36
+  - "Liability due value": liability_due_value
+    datatype: currency
+    min: 0
+  - "Liability1 weekly payment": liability1_weekly_payment_amount
+    datatype: currency
+    min: 0
+  - "Liability1": liability1
+    maxlength: 34
+  - "Liability1 incurred": liability1_incurred
+    datatype: date
+  - "Liability1 due value": liability1_due_value
+    datatype: currency
+    min: 0
+  - "Liability2": liability2
+    maxlength: 36
+  - "Liability2 weekly payment amount": liability2_weekly_payment_amount
+    datatype: currency
+    min: 0
+  - "Liability2 incurred": liability2_incurred
+    datatype: date
+  - "Liability2 due value": liability2_due_value
+    datatype: currency
+    min: 0
+  - "Liability3 weekly payment amount": liability3_weekly_payment_amount
+    datatype: currency
+    min: 0
+  - "Liability3": liability3
+    maxlength: 36
+  - "Liability3 incurred": liability3_incurred
+    datatype: date
+  - "Liability3 due value": liability3_due_value
+    datatype: currency
+    min: 0
+  - "Liabilities total due value": liabilities_total_due_value
+    datatype: currency
+    min: 0
+  - "Liabilities total weekly payment amount": liabilities_total_weekly_payment_amount
+    datatype: currency
+    min: 0
+---
+id: Screen six
+question: |
+  Screen six
+fields:
+  - "Date of attorney signature": attorney_signature_date
+    datatype: date
+  - "Attorney bbo number": attorney_bbo_number
+    maxlength: 30
+---
+id: preview Financial_statement_short_form
+question: |
+  Preview your form before you sign it
+subquestion: |
+  Here is a preview of the form you will sign on the next page.   
+  
+  ${ al_court_bundle.as_pdf(key='preview') }
+
+  Click the image to open it in a new tab. Click the "Make changes" button
+  to edit your answers.
+
+  ${ action_button_html(url_action('review_Financial_statement_short_form'), label='Make changes', color='info') }
+  
+  Remember to come back to this window to continue and sign your form.
+continue button field: Financial_statement_short_form_preview_question    
+---
+code: |
+  signature_fields = ['attorneys[0].signature', 'users[0].signature']
+---
+id: Financial statement short form review screen
+event: review_Financial_statement_short_form
+question: |
+  Review your answers
+review:
+  - Edit: users_social_security_number
+    button: |
+      **Your Social Security Number**:
+      ${ users_social_security_number }
+  - Edit: users_date_of_birth
+    button: |
+      **Your date of birth**:
+      ${ users_date_of_birth }
+  - Edit: users_children_number
+    button: |
+      **Number of children**:
+      ${ users_children_number }
+  - Edit: users_occupation
+    button: |
+      **Occupation**:
+      ${ users_occupation }
+  - Edit: has_health_insurance
+    button: |
+      **Health insurance**:
+      ${ word(yesno(has_health_insurance)) }
+  - Edit: health_insurance_provider
+    button: |
+      **Health insurance provider**:
+      ${ health_insurance_provider }
+  - Edit: base_pay_is_salary
+    button: |
+      **Salary**:
+      ${ word(yesno(base_pay_is_salary)) }
+  - Edit: base_pay_is_wages
+    button: |
+      **Wages**:
+      ${ word(yesno(base_pay_is_wages)) }
+  - Edit: income_base_pay_amount
+    button: |
+      **Base pay**:
+      ${ currency(income_base_pay_amount) }
+  - Edit: income_overtime_amount
+    button: |
+      **Overtime**:
+      ${ currency(income_overtime_amount) }
+  - Edit: income_part_time_amount
+    button: |
+      **Part-time**:
+      ${ currency(income_part_time_amount) }
+  - Edit: income_self_employment_amount
+    button: |
+      **Income from self-employment**:
+      ${ currency(income_self_employment_amount) }
+  - Edit: income_tips_amount
+    button: |
+      **Tips**:
+      ${ currency(income_tips_amount) }
+  - Edit: bonuses
+    button: |
+      **Bonuses**:
+      ${ word(yesno(bonuses)) }
+  - Edit: commissions
+    button: |
+      **Commissions**:
+      ${ word(yesno(commissions)) }
+  - Edit: income_commissions_bonuses_amount
+    button: |
+      **Income  from commissions and bonuses**:
+      ${ currency(income_commissions_bonuses_amount) }
+  - Edit: interest
+    button: |
+      **Interest**:
+      ${ word(yesno(interest)) }
+  - Edit: dividends
+    button: |
+      **Dividends**:
+      ${ word(yesno(dividends)) }
+  - Edit: income_dividends_interest_amount
+    button: |
+      **Income from dividends and interest**:
+      ${ currency(income_dividends_interest_amount) }
+  - Edit: trusts
+    button: |
+      **Trusts**:
+      ${ word(yesno(trusts)) }
+  - Edit: annuities
+    button: |
+      **Annuities**:
+      ${ word(yesno(annuities)) }
+  - Edit: income_trusts_annuities_amount
+    button: |
+      **Income from trusts and annuities**:
+      ${ currency(income_trusts_annuities_amount) }
+  - Edit: pensions
+    button: |
+      **Pensions**:
+      ${ word(yesno(pensions)) }
+  - Edit: retirement_funds
+    button: |
+      **Retirement funds**:
+      ${ word(yesno(retirement_funds)) }
+  - Edit: income_pensions_retirement_amount
+    button: |
+      **Income from pensions and retirement accounts**:
+      ${ currency(income_pensions_retirement_amount) }
+  - Edit: income_social_security_amount
+    button: |
+      **Social Security**:
+      ${ currency(income_social_security_amount) }
+  - Edit: disability
+    button: |
+      **Disability**:
+      ${ word(yesno(disability)) }
+  - Edit: unemployment_insurance
+    button: |
+      **Unemployment Insurance**:
+      ${ word(yesno(unemployment_insurance)) }
+  - Edit: workers_compensation
+    button: |
+      **Workers Compensation**:
+      ${ word(yesno(workers_compensation)) }
+  - Edit: income_disability_ui_workers_comp_amount
+    button: |
+      **Income from disability, Unemployment and Workers\' Comp**:
+      ${ currency(income_disability_ui_workers_comp_amount) }
+  - Edit: income_public_benefits_amount
+    button: |
+      **Income from public benefits**:
+      ${ currency(income_public_benefits_amount) }
+  - Edit: child_support
+    button: |
+      **Child support**:
+      ${ word(yesno(child_support)) }
+  - Edit: alimony_actually_received
+    button: |
+      **Alimony actually received**:
+      ${ word(yesno(alimony_actually_received)) }
+  - Edit: income_child_support_alimony_amount
+    button: |
+      **Income from child support and alimony**:
+      ${ currency(income_child_support_alimony_amount) }
+  - Edit: income_rental_amount
+    button: |
+      **Rental income**:
+      ${ currency(income_rental_amount) }
+  - Edit: income_royalties_amount_amount
+    button: |
+      **Income from royalties**:
+      ${ currency(income_royalties_amount_amount) }
+  - Edit: income_household_member_contributions_amount
+    button: |
+      **Household member contributions**:
+      ${ currency(income_household_member_contributions_amount) }
+  - Edit: income_other1_amount
+    button: |
+      **Income1 other amount**:
+      ${ currency(income_other1_amount) }
+  - Edit: income_other2_amount
+    button: |
+      **Income2 other amount**:
+      ${ currency(income_other2_amount) }
+  - Edit: income_other_sources
+    button: |
+      **Income other sources**:
+      > ${ single_paragraph(income_other_sources) }
+  - Edit: total_gross_weekly_income_amount
+    button: |
+      **Total gross weekly income**:
+      ${ currency(total_gross_weekly_income_amount) }
+  - Edit: exemptions_federal_income_tax
+    button: |
+      **Number of exemptions for federal income tax**:
+      ${ exemptions_federal_income_tax }
+  - Edit: deductions_federal_income_tax_amount
+    button: |
+      **Deductions from federal income tax**:
+      ${ currency(deductions_federal_income_tax_amount) }
+  - Edit: exemptions_state_income_tax
+    button: |
+      **Number of exemptions for state income tax**:
+      ${ exemptions_state_income_tax }
+  - Edit: deductions_state_income_tax_amount
+    button: |
+      **Deductions from state income tax**:
+      ${ currency(deductions_state_income_tax_amount) }
+  - Edit: deductions_fica_medicare_amount
+    button: |
+      **Deductions for FICA or Medicare**:
+      ${ currency(deductions_fica_medicare_amount) }
+  - Edit: deductions_medical_insurance_amount
+    button: |
+      **Deductions for health insurance**:
+      ${ currency(deductions_medical_insurance_amount) }
+  - Edit: deductions_union_dues_amount
+    button: |
+      **Deductions for union dues**:
+      ${ currency(deductions_union_dues_amount) }
+  - Edit: deductions_total_amount
+    button: |
+      **Total deductions**:
+      ${ currency(deductions_total_amount) }
+  - Edit: adjusted_net_weekly_income_amount
+    button: |
+      **Adjusted net weekly income**:
+      ${ currency(adjusted_net_weekly_income_amount) }
+  - Edit: deduction_loan_repayment_yes
+    button: |
+      **Deduction for repaying loans**:
+      ${ word(yesno(deduction_loan_repayment_yes)) }
+  - Edit: deduction_savings_yes
+    button: |
+      **Deduction for savings**:
+      ${ word(yesno(deduction_savings_yes)) }
+  - Edit: deductions_credit_union_loan_savings_amount
+    button: |
+      **Deductions for credit union, loans and savings**:
+      ${ currency(deductions_credit_union_loan_savings_amount) }
+  - Edit: deductions_savings_amount
+    button: |
+      **Deductions for savings**:
+      ${ currency(deductions_savings_amount) }
+  - Edit: deductions_retirement_amount
+    button: |
+      **Deductions for retirement**:
+      ${ currency(deductions_retirement_amount) }
+  - Edit: other_deductions_specifics
+    button: |
+      **Other deductions**:
+      ${ other_deductions_specifics }
+  - Edit: deductions_child_support_compensation_401k_etc_amount
+    button: |
+      **Deductions for child support compensation 401k etc**:
+      ${ currency(deductions_child_support_compensation_401k_etc_amount) }
+  - Edit: other_deductions_total_amount
+    button: |
+      **Other deductions total**:
+      ${ currency(other_deductions_total_amount) }
+  - Edit: net_weekly_income_amount
+    button: |
+      **Net weekly income**:
+      ${ currency(net_weekly_income_amount) }
+  - Edit: gross_yearly_income_last_year_amount
+    button: |
+      **Gross yearly income last year**:
+      ${ currency(gross_yearly_income_last_year_amount) }
+  - Edit: years_paid_into_social_security
+    button: |
+      **Years paid into social security**:
+      ${ years_paid_into_social_security }
+  - Edit: expense_life_insurance_amount
+    button: |
+      **Life insurance**:
+      ${ currency(expense_life_insurance_amount) }
+  - Edit: expense_rent_amount
+    button: |
+      **Rent**:
+      ${ currency(expense_rent_amount) }
+  - Edit: expense_medical_insurance_amount
+    button: |
+      **Health insurance not deducted from your pay**:
+      ${ currency(expense_medical_insurance_amount) }
+  - Edit: expense_home_insurance_amount
+    button: |
+      **Homeowner\'s or renter\'s insurance**:
+      ${ currency(expense_home_insurance_amount) }
+  - Edit: expense_medical_uninsured_amount
+    button: |
+      **Uninsured medical expenses**:
+      ${ currency(expense_medical_uninsured_amount) }
+  - Edit: expense_maintenance_amount
+    button: |
+      **Maintenance**:
+      ${ currency(expense_maintenance_amount) }
+  - Edit: expense_heat_amount
+    button: |
+      **Heat**:
+      ${ currency(expense_heat_amount) }
+  - Edit: expense_toiletries_amount
+    button: |
+      **Toiletries**:
+      ${ currency(expense_toiletries_amount) }
+  - Edit: expense_electricity_gas_amount
+    button: |
+      **Electricity and gas**:
+      ${ currency(expense_electricity_gas_amount) }
+  - Edit: expense_motor_vehicles_amount
+    button: |
+      **Motor vehicles expense**:
+      ${ currency(expense_motor_vehicles_amount) }
+  - Edit: expense_phone_amount
+    button: |
+      **Phone**:
+      ${ currency(expense_phone_amount) }
+  - Edit: expense_motor_vehicle_payment_amount
+    button: |
+      **Car payment**:
+      ${ currency(expense_motor_vehicle_payment_amount) }
+  - Edit: expense_water_sewer_amount
+    button: |
+      **Water and sewer**:
+      ${ currency(expense_water_sewer_amount) }
+  - Edit: expense_child_care_amount
+    button: |
+      **Child care**:
+      ${ currency(expense_child_care_amount) }
+  - Edit: expense_food_amount
+    button: |
+      **Food**:
+      ${ currency(expense_food_amount) }
+  - Edit: expense_house_supplies_amount
+    button: |
+      **House supplies**:
+      ${ currency(expense_house_supplies_amount) }
+  - Edit: expense_other_amount
+    button: |
+      **Other expense**:
+      ${ currency(expense_other_amount) }
+  - Edit: expense_others_amount
+    button: |
+      **Other expenses**:
+      ${ currency(expense_others_amount) }
+  - Edit: expense_laundry_cleaning_amount
+    button: |
+      **Laundry and cleaning**:
+      ${ currency(expense_laundry_cleaning_amount) }
+  - Edit: expenses_other_explanation
+    button: |
+      **Other expenses**:
+      ${ expenses_other_explanation }
+  - Edit: expense_clothing_amount
+    button: |
+      **Clothing**:
+      ${ currency(expense_clothing_amount) }
+  - Edit: total_weekly_expenses_amount
+    button: |
+      **Total weekly expenses**:
+      ${ currency(total_weekly_expenses_amount) }
+  - Edit: legal_fees_amount
+    button: |
+      **Legal fees**:
+      ${ currency(legal_fees_amount) }
+  - Edit: legal_fees_incurred_to_date_against_retainer_amount
+    button: |
+      **Legal fees incurred to date against retainer amount**:
+      ${ currency(legal_fees_incurred_to_date_against_retainer_amount) }
+  - Edit: legal_fees_total_miniimum_amount
+    button: |
+      **Legal fees minimum**:
+      ${ currency(legal_fees_total_miniimum_amount) }
+  - Edit: legal_fees_total_maximum_amount
+    button: |
+      **Legal fees maximum**:
+      ${ currency(legal_fees_total_maximum_amount) }
+  - Edit: assets_real_estate_address
+    button: |
+      **Real estate address**:
+      ${ assets_real_estate_address }
+  - Edit: assets_real_estate_name_on_title
+    button: |
+      **Name on title**:
+      ${ assets_real_estate_name_on_title }
+  - Edit: assets_real_estate_fair_market_value
+    button: |
+      **Fair market value**:
+      ${ currency(assets_real_estate_fair_market_value) }
+  - Edit: assets_real_estate_mortgage_value
+    button: |
+      **Mortgage value**:
+      ${ currency(assets_real_estate_mortgage_value) }
+  - Edit: assets_real_estate_equity_value
+    button: |
+      **Equity**:
+      ${ currency(assets_real_estate_equity_value) }
+  - Edit: assets_motor_vehicle_fair_market_value
+    button: |
+      **Motor vehicle fair market value**:
+      ${ currency(assets_motor_vehicle_fair_market_value) }
+  - Edit: assets_motor_vehicle_loan_amount
+    button: |
+      **Motor vehicle loan amount**:
+      ${ currency(assets_motor_vehicle_loan_amount) }
+  - Edit: assets_motor_vehicle_equity_value
+    button: |
+      **Motor vehicle equity**:
+      ${ currency(assets_motor_vehicle_equity_value) }
+  - Edit: assets_motor_vehicle1_fair_market_value
+    button: |
+      **Motor vehicle1 fair market value**:
+      ${ currency(assets_motor_vehicle1_fair_market_value) }
+  - Edit: assets_motor_vehicle1_loan_amount
+    button: |
+      **Motor vehicle1 loan**:
+      ${ currency(assets_motor_vehicle1_loan_amount) }
+  - Edit: assets_motor_vehicle1_equity_value
+    button: |
+      **Motor vehicle1 equity**:
+      ${ currency(assets_motor_vehicle1_equity_value) }
+  - Edit: assets_retirement_plan_value
+    button: |
+      **Value of your Retirement plan**:
+      ${ currency(assets_retirement_plan_value) }
+  - Edit: assets_retirement_plan1_value
+    button: |
+      **Value of your retirement plan1**:
+      ${ currency(assets_retirement_plan1_value) }
+  - Edit: assets_retirement_plan2_value
+    button: |
+      **Value of your  retirement plan2**:
+      ${ currency(assets_retirement_plan2_value) }
+  - Edit: assets_retirement_plan_name_and_account_number
+    button: |
+      **Retirement plan name and account number**:
+      > ${ single_paragraph(assets_retirement_plan_name_and_account_number) }
+  - Edit: assets_tax_deferred_annuity_plan_value
+    button: |
+      **Deferred annuity plan value**:
+      ${ currency(assets_tax_deferred_annuity_plan_value) }
+  - Edit: assets_life_insurance
+    button: |
+      **Life insurance**:
+      ${ currency(assets_life_insurance) }
+  - Edit: assets_account_name_and_number
+    button: |
+      **Account name and number**:
+      ${ assets_account_name_and_number }
+  - Edit: assets_account_value
+    button: |
+      **Account value**:
+      ${ currency(assets_account_value) }
+  - Edit: assets_account_name_and_number1
+    button: |
+      **Account name and number1**:
+      ${ assets_account_name_and_number1 }
+  - Edit: assets_account_value1
+    button: |
+      **Account value1**:
+      ${ assets_account_value1 }
+  - Edit: assets_account_name_and_number2
+    button: |
+      **Account name and number2**:
+      ${ assets_account_name_and_number2 }
+  - Edit: assets_account_value2
+    button: |
+      **Account value2**:
+      ${ assets_account_value2 }
+  - Edit: assets_stocks_and_bonds
+    button: |
+      **Assets stocks and bonds**:
+      ${ assets_stocks_and_bonds }
+  - Edit: assets_stocks_and_bonds_value
+    button: |
+      **Assets stocks and bonds value**:
+      ${ currency(assets_stocks_and_bonds_value) }
+  - Edit: assets_stocks_and_bonds1
+    button: |
+      **Assets stocks and bonds1**:
+      ${ assets_stocks_and_bonds1 }
+  - Edit: assets_stocks_and_bonds_value1
+    button: |
+      **Assets stocks and bonds value1**:
+      ${ assets_stocks_and_bonds_value1 }
+  - Edit: total_assets_value
+    button: |
+      **Total assets value**:
+      ${ currency(total_assets_value) }
+  - Edit: liability_incurred
+    button: |
+      **Liability incurred**:
+      ${ liability_incurred }
+  - Edit: liability_weekly_payment_amount
+    button: |
+      **Liability weekly payment amount**:
+      ${ currency(liability_weekly_payment_amount) }
+  - Edit: liability
+    button: |
+      **Liability**:
+      ${ liability }
+  - Edit: liability_due_value
+    button: |
+      **Liability due value**:
+      ${ currency(liability_due_value) }
+  - Edit: liability1_weekly_payment_amount
+    button: |
+      **Liability1 weekly payment**:
+      ${ currency(liability1_weekly_payment_amount) }
+  - Edit: liability1
+    button: |
+      **Liability1**:
+      ${ liability1 }
+  - Edit: liability1_incurred
+    button: |
+      **Liability1 incurred**:
+      ${ liability1_incurred }
+  - Edit: liability1_due_value
+    button: |
+      **Liability1 due value**:
+      ${ currency(liability1_due_value) }
+  - Edit: liability2
+    button: |
+      **Liability2**:
+      ${ liability2 }
+  - Edit: liability2_weekly_payment_amount
+    button: |
+      **Liability2 weekly payment amount**:
+      ${ currency(liability2_weekly_payment_amount) }
+  - Edit: liability2_incurred
+    button: |
+      **Liability2 incurred**:
+      ${ liability2_incurred }
+  - Edit: liability2_due_value
+    button: |
+      **Liability2 due value**:
+      ${ currency(liability2_due_value) }
+  - Edit: liability3_weekly_payment_amount
+    button: |
+      **Liability3 weekly payment amount**:
+      ${ currency(liability3_weekly_payment_amount) }
+  - Edit: liability3
+    button: |
+      **Liability3**:
+      ${ liability3 }
+  - Edit: liability3_incurred
+    button: |
+      **Liability3 incurred**:
+      ${ liability3_incurred }
+  - Edit: liability3_due_value
+    button: |
+      **Liability3 due value**:
+      ${ currency(liability3_due_value) }
+  - Edit: liabilities_total_due_value
+    button: |
+      **Liabilities total due value**:
+      ${ currency(liabilities_total_due_value) }
+  - Edit: liabilities_total_weekly_payment_amount
+    button: |
+      **Liabilities total weekly payment amount**:
+      ${ currency(liabilities_total_weekly_payment_amount) }
+  - Edit: attorney_signature_date
+    button: |
+      **Date of attorney signature**:
+      ${ attorney_signature_date }
+  - Edit: attorney_bbo_number
+    button: |
+      **Attorney bbo number**:
+      ${ attorney_bbo_number }
+  - Edit: trial_court
+    button: |
+      **trial_court**
+
+      % if defined("trial_court.division"):
+      * division: ${ trial_court.division }
+      % endif
+  - Edit: docket_number
+    button: |
+      **docket_number**:
+      ${ docket_number }
+  - Edit: plaintiffs.revisit
+    button: |
+      **Plaintiffs**
+
+      % for item in plaintiffs:
+        * ${ item }
+      % endfor
+  - Edit: defendants.revisit
+    button: |
+      **Defendants**
+
+      % for item in defendants:
+        * ${ item }
+      % endfor
+  - Edit: users.revisit
+    button: |
+      **Users**
+
+      % for item in users:
+        * ${ item }
+      % endfor
+  - Edit: creditors.revisit
+    button: |
+      **Creditors**
+
+      % for item in creditors:
+        * ${ item }
+      % endfor
+  - Edit: signature_date
+    button: |
+      **signature_date**:
+      ${ signature_date }
+  - Edit: attorneys.revisit
+    button: |
+      **Attorneys**
+
+      % for item in attorneys:
+        * ${ item }
+      % endfor
+  - Edit: employers.revisit
+    button: |
+      **Employers**
+
+      % for item in employers:
+        * ${ item }
+      % endfor
+---
+continue button field: plaintiffs.revisit
+question: |
+  Edit plaintiffs
+subquestion: |
+  ${ plaintiffs.table }
+
+  ${ plaintiffs.add_action() }
+---
+table: plaintiffs.table
+rows: plaintiffs
+columns:
+  - Name: |
+      row_item.name.full() if defined("row_item.name.first") else ""
+edit:
+  - name.first
+confirm: True
+
+---
+continue button field: defendants.revisit
+question: |
+  Edit defendants
+subquestion: |
+  ${ defendants.table }
+
+  ${ defendants.add_action() }
+---
+table: defendants.table
+rows: defendants
+columns:
+  - Name: |
+      row_item.name.full() if defined("row_item.name.first") else ""
+edit:
+  - name.first
+confirm: True
+
+---
+continue button field: users.revisit
+question: |
+  Edit users
+subquestion: |
+  ${ users.table }
+
+  ${ users.add_action() }
+---
+table: users.table
+rows: users
+columns:
+  - Name: |
+      row_item.name.full() if defined("row_item.name.first") else ""
+  - Address: |
+      row_item.address.block() if defined("row_item.address.city") else ""
+  - Phone number: |
+      row_item.phone_number if defined("row_item.phone_number") else ""
+  - Signature: |
+      row_item.signature if defined("row_item.signature") else ""
+edit:
+  - name.first
+  - address.city
+  - phone_number
+  - signature
+confirm: True
+
+---
+continue button field: creditors.revisit
+question: |
+  Edit creditors
+subquestion: |
+  ${ creditors.table }
+
+  ${ creditors.add_action() }
+---
+table: creditors.table
+rows: creditors
+columns:
+  - Name: |
+      row_item.name.full() if defined("row_item.name.first") else ""
+edit:
+  - name.first
+confirm: True
+
+---
+continue button field: attorneys.revisit
+question: |
+  Edit attorneys
+subquestion: |
+  ${ attorneys.table }
+
+  ${ attorneys.add_action() }
+---
+table: attorneys.table
+rows: attorneys
+columns:
+  - Signature: |
+      row_item.signature if defined("row_item.signature") else ""
+  - Name: |
+      row_item.name.full() if defined("row_item.name.first") else ""
+  - Address: |
+      row_item.address.block() if defined("row_item.address.city") else ""
+  - Phone number: |
+      row_item.phone_number if defined("row_item.phone_number") else ""
+edit:
+  - signature
+  - name.first
+  - address.city
+  - phone_number
+confirm: True
+
+---
+continue button field: employers.revisit
+question: |
+  Edit employers
+subquestion: |
+  ${ employers.table }
+
+  ${ employers.add_action() }
+---
+table: employers.table
+rows: employers
+columns:
+  - Address: |
+      row_item.address.block() if defined("row_item.address.state") else ""
+  - Name: |
+      row_item.name.full() if defined("row_item.name.first") else ""
+  - Phone number: |
+      row_item.phone_number if defined("row_item.phone_number") else ""
+edit:
+  - address.state
+  - name.first
+  - phone_number
+confirm: True
+
+---
+id: download Financial_statement_short_form
+event: Financial_statement_short_form_download
+question: |
+  Your form is ready to download.
+subquestion: |
+  Thank you ${users}. Your form is ready to download and deliver.
+  
+  View, download and send your form below. Click the "Make changes" button to fix any mistakes.
+
+  ${ action_button_html(url_action('review_Financial_statement_short_form'), label='Make changes', color='info') }
+  
+  
+  ${ al_user_bundle.download_list_html() }
+  
+
+  ${ al_user_bundle.send_button_html(show_editable_checkbox=False) }
+
+progress: 100
+---
+objects:
+  - Financial_statement_short_form_post_interview_instructions: ALDocument.using(title="Instructions", filename="Financial_statement_short_form_next_steps.docx", enabled=True, has_addendum=False, default_overflow_message=AL_DEFAULT_OVERFLOW_MESSAGE)
+  - Financial_statement_short_form_attachment: ALDocument.using(title="Probate and Family Court Financial statement (short form) (CJD 301S)", filename="Financial_statement_short_form_CJD-301S_fillable.pdf", enabled=True, has_addendum=False, default_overflow_message=AL_DEFAULT_OVERFLOW_MESSAGE)
+---
+objects:
+  - al_user_bundle: ALDocumentBundle.using(elements=[Financial_statement_short_form_post_interview_instructions,Financial_statement_short_form_attachment], filename="Financial_statement_short_form_package.pdf", title="All forms to download for your records", enabled=True)
+  - al_court_bundle: ALDocumentBundle.using(elements=[Financial_statement_short_form_attachment], filename="Financial_statement_short_form_package.pdf", title="All forms to download for your records", enabled=True)
+---
+attachments:
+  - name: Financial statement short form post interview instructions
+    filename: Post-interview-instructions     
+    variable name: Financial_statement_short_form_post_interview_instructions[i]        
+    skip undefined: True
+    docx template file: Financial_statement_short_form_next_steps.docx
+  - name: Financial statement short form attachment
+    filename: Financial_statement_short_form     
+    variable name: Financial_statement_short_form_attachment[i]        
+    skip undefined: True
+    pdf template file: Financial_statement_short_form_CJD-301S_fillable.pdf
+    fields:
+      - "trial_court_division": ${ trial_court.division }
+      - "trial_court_division__2": ${ trial_court.division }
+      - "trial_court_division__3": ${ trial_court.division }
+      - "trial_court_division__3": ${ trial_court.division }
+      - "docket_number": ${ docket_number }
+      - "docket_number__2": ${ docket_number }
+      - "docket_number__3": ${ docket_number }
+      - "docket_number__3": ${ docket_number }
+      - "plaintiff": ${ plaintiffs[0] }
+      - "defendant": ${ defendants[0] }
+      - "users_name": ${ users[0] }
+      - "users_address_zip": ${ users[0].address.zip }
+      - "users_address_address": ${ users[0].address.address }
+      - "users_address_state": ${ users[0].address.state }
+      - "users_address_city": ${ users[0].address.city }
+      - "users_phone_number": ${ users[0].phone_number }
+      - "creditor": ${ creditors[0] }
+      - "creditor1": ${ creditors[0] }
+      - "creditor2": ${ creditors[1] }
+      - "creditor3": ${ creditors[2] }
+      - "signature_date": ${ signature_date }
+      - "users_signature": ${ users[0].signature_if_final(i) }
+      - "attorney_signature": ${ attorneys[0].signature_if_final(i) }
+      - "attorney_name": ${ attorneys[0] }
+      - "attorney_address_address": ${ attorneys[0].address.address }
+      - "attorney_address_zip": ${ attorneys[0].address.zip }
+      - "attorney_address_state": ${ attorneys[0].address.state }
+      - "attorney_address_city": ${ attorneys[0].address.city }
+      - "attorney_phone_number": ${ attorneys[0].phone_number }
+      - "employers1_address_address": ${ employers[0].address.address }
+      - "employers1": ${ employers[0] }
+      - "employers1_phone_number": ${ employers[0].phone_number }
+      - "employers1_address_zip": ${ employers[0].address.zip }
+      - "employers1_address_city": ${ employers[0].address.city }
+      - "employers1_address_state": ${ employers[0].address.state }
+      - "users_social_security_number": ${ users_social_security_number }
+      - "users_date_of_birth": ${ users_date_of_birth }
+      - "users_children_number": ${ "{:,.2f}".format(users_children_number) }
+      - "users_occupation": ${ users_occupation }
+      - "has_health_insurance_yes": ${ has_health_insurance }
+      - "has_health_insurance_no": ${ not has_health_insurance }
+      - "health_insurance_provider": ${ health_insurance_provider }
+      - "base_pay_is_salary": ${ base_pay_is_salary }
+      - "base_pay_is_wages": ${ base_pay_is_wages }
+      - "income_base_pay_amount": ${ currency(income_base_pay_amount) }
+      - "income_overtime_amount": ${ currency(income_overtime_amount) }
+      - "income_part_time_amount": ${ currency(income_part_time_amount) }
+      - "income_self_employment_amount": ${ currency(income_self_employment_amount) }
+      - "income_tips_amount": ${ currency(income_tips_amount) }
+      - "bonuses": ${ bonuses }
+      - "commissions": ${ commissions }
+      - "income_commissions_bonuses_amount": ${ currency(income_commissions_bonuses_amount) }
+      - "interest": ${ interest }
+      - "dividends": ${ dividends }
+      - "income_dividends_interest_amount": ${ currency(income_dividends_interest_amount) }
+      - "trusts": ${ trusts }
+      - "annuities": ${ annuities }
+      - "income_trusts_annuities_amount": ${ currency(income_trusts_annuities_amount) }
+      - "pensions": ${ pensions }
+      - "retirement_funds": ${ retirement_funds }
+      - "income_pensions_retirement_amount": ${ currency(income_pensions_retirement_amount) }
+      - "income_social_security_amount": ${ currency(income_social_security_amount) }
+      - "disability": ${ disability }
+      - "unemployment_insurance": ${ unemployment_insurance }
+      - "workers_compensation": ${ workers_compensation }
+      - "income_disability_ui_workers_comp_amount": ${ currency(income_disability_ui_workers_comp_amount) }
+      - "income_public_benefits_amount": ${ currency(income_public_benefits_amount) }
+      - "child_support": ${ child_support }
+      - "alimony_actually_received": ${ alimony_actually_received }
+      - "income_child_support_alimony_amount": ${ currency(income_child_support_alimony_amount) }
+      - "income_rental_amount": ${ currency(income_rental_amount) }
+      - "income_royalties_amount_amount": ${ currency(income_royalties_amount_amount) }
+      - "income_household_member_contributions_amount": ${ currency(income_household_member_contributions_amount) }
+      - "income_other1_amount": ${ currency(income_other1_amount) }
+      - "income_other2_amount": ${ currency(income_other2_amount) }
+      - "income_other_sources": ${ income_other_sources }
+      - "total_gross_weekly_income_amount": ${ currency(total_gross_weekly_income_amount) }
+      - "exemptions_federal_income_tax": ${ "{:,.2f}".format(exemptions_federal_income_tax) }
+      - "deductions_federal_income_tax_amount": ${ currency(deductions_federal_income_tax_amount) }
+      - "exemptions_state_income_tax": ${ "{:,.2f}".format(exemptions_state_income_tax) }
+      - "deductions_state_income_tax_amount": ${ currency(deductions_state_income_tax_amount) }
+      - "deductions_fica_medicare_amount": ${ currency(deductions_fica_medicare_amount) }
+      - "deductions_medical_insurance_amount": ${ currency(deductions_medical_insurance_amount) }
+      - "deductions_union_dues_amount": ${ currency(deductions_union_dues_amount) }
+      - "deductions_total_amount": ${ currency(deductions_total_amount) }
+      - "adjusted_net_weekly_income_amount": ${ currency(adjusted_net_weekly_income_amount) }
+      - "deduction_loan_repayment_yes": ${ deduction_loan_repayment_yes }
+      - "deduction_savings_yes": ${ deduction_savings_yes }
+      - "deductions_credit_union_loan_savings_amount": ${ currency(deductions_credit_union_loan_savings_amount) }
+      - "deductions_savings_amount": ${ currency(deductions_savings_amount) }
+      - "deductions_retirement_amount": ${ currency(deductions_retirement_amount) }
+      - "other_deductions_specifics": ${ other_deductions_specifics }
+      - "deductions_child_support_compensation_401k_etc_amount": ${ currency(deductions_child_support_compensation_401k_etc_amount) }
+      - "other_deductions_total_amount": ${ currency(other_deductions_total_amount) }
+      - "net_weekly_income_amount": ${ currency(net_weekly_income_amount) }
+      - "gross_yearly_income_last_year_amount": ${ currency(gross_yearly_income_last_year_amount) }
+      - "years_paid_into_social_security": ${ "{:,.2f}".format(years_paid_into_social_security) }
+      - "expense_life_insurance_amount": ${ currency(expense_life_insurance_amount) }
+      - "expense_rent_amount": ${ currency(expense_rent_amount) }
+      - "expense_medical_insurance_amount": ${ currency(expense_medical_insurance_amount) }
+      - "expense_home_insurance_amount": ${ currency(expense_home_insurance_amount) }
+      - "expense_medical_uninsured_amount": ${ currency(expense_medical_uninsured_amount) }
+      - "expense_maintenance_amount": ${ currency(expense_maintenance_amount) }
+      - "expense_heat_amount": ${ currency(expense_heat_amount) }
+      - "expense_toiletries_amount": ${ currency(expense_toiletries_amount) }
+      - "expense_electricity_gas_amount": ${ currency(expense_electricity_gas_amount) }
+      - "expense_motor_vehicles_amount": ${ currency(expense_motor_vehicles_amount) }
+      - "expense_phone_amount": ${ currency(expense_phone_amount) }
+      - "expense_motor_vehicle_payment_amount": ${ currency(expense_motor_vehicle_payment_amount) }
+      - "expense_water_sewer_amount": ${ currency(expense_water_sewer_amount) }
+      - "expense_child_care_amount": ${ currency(expense_child_care_amount) }
+      - "expense_food_amount": ${ currency(expense_food_amount) }
+      - "expense_house_supplies_amount": ${ currency(expense_house_supplies_amount) }
+      - "expense_other_amount": ${ currency(expense_other_amount) }
+      - "expense_others_amount": ${ currency(expense_others_amount) }
+      - "expense_laundry_cleaning_amount": ${ currency(expense_laundry_cleaning_amount) }
+      - "expenses_other_explanation": ${ expenses_other_explanation }
+      - "expense_clothing_amount": ${ currency(expense_clothing_amount) }
+      - "total_weekly_expenses_amount": ${ currency(total_weekly_expenses_amount) }
+      - "legal_fees_amount": ${ currency(legal_fees_amount) }
+      - "legal_fees_incurred_to_date_against_retainer_amount": ${ currency(legal_fees_incurred_to_date_against_retainer_amount) }
+      - "legal_fees_total_miniimum_amount": ${ currency(legal_fees_total_miniimum_amount) }
+      - "legal_fees_total_maximum_amount": ${ currency(legal_fees_total_maximum_amount) }
+      - "assets_real_estate_address": ${ assets_real_estate_address }
+      - "assets_real_estate_name_on_title": ${ assets_real_estate_name_on_title }
+      - "assets_real_estate_fair_market_value": ${ currency(assets_real_estate_fair_market_value) }
+      - "assets_real_estate_mortgage_value": ${ currency(assets_real_estate_mortgage_value) }
+      - "assets_real_estate_equity_value": ${ currency(assets_real_estate_equity_value) }
+      - "assets_motor_vehicle_fair_market_value": ${ currency(assets_motor_vehicle_fair_market_value) }
+      - "assets_motor_vehicle_loan_amount": ${ currency(assets_motor_vehicle_loan_amount) }
+      - "assets_motor_vehicle_equity_value": ${ currency(assets_motor_vehicle_equity_value) }
+      - "assets_motor_vehicle1_fair_market_value": ${ currency(assets_motor_vehicle1_fair_market_value) }
+      - "assets_motor_vehicle1_loan_amount": ${ currency(assets_motor_vehicle1_loan_amount) }
+      - "assets_motor_vehicle1_equity_value": ${ currency(assets_motor_vehicle1_equity_value) }
+      - "assets_retirement_plan_value": ${ currency(assets_retirement_plan_value) }
+      - "assets_retirement_plan1_value": ${ currency(assets_retirement_plan1_value) }
+      - "assets_retirement_plan2_value": ${ currency(assets_retirement_plan2_value) }
+      - "assets_retirement_plan_name_and_account_number": ${ assets_retirement_plan_name_and_account_number }
+      - "assets_tax_deferred_annuity_plan_value": ${ currency(assets_tax_deferred_annuity_plan_value) }
+      - "assets_life_insurance": ${ currency(assets_life_insurance) }
+      - "assets_account_name_and_number": ${ assets_account_name_and_number }
+      - "assets_account_value": ${ currency(assets_account_value) }
+      - "assets_account_name_and_number1": ${ assets_account_name_and_number1 }
+      - "assets_account_value1": ${ assets_account_value1 }
+      - "assets_account_name_and_number2": ${ assets_account_name_and_number2 }
+      - "assets_account_value2": ${ assets_account_value2 }
+      - "assets_stocks_and_bonds": ${ assets_stocks_and_bonds }
+      - "assets_stocks_and_bonds_value": ${ currency(assets_stocks_and_bonds_value) }
+      - "assets_stocks_and_bonds1": ${ assets_stocks_and_bonds1 }
+      - "assets_stocks_and_bonds_value1": ${ assets_stocks_and_bonds_value1 }
+      - "total_assets_value": ${ currency(total_assets_value) }
+      - "liability_incurred": ${ liability_incurred }
+      - "liability_weekly_payment_amount": ${ currency(liability_weekly_payment_amount) }
+      - "liability": ${ liability }
+      - "liability_due_value": ${ currency(liability_due_value) }
+      - "liability1_weekly_payment_amount": ${ currency(liability1_weekly_payment_amount) }
+      - "liability1": ${ liability1 }
+      - "liability1_incurred": ${ liability1_incurred }
+      - "liability1_due_value": ${ currency(liability1_due_value) }
+      - "liability2": ${ liability2 }
+      - "liability2_weekly_payment_amount": ${ currency(liability2_weekly_payment_amount) }
+      - "liability2_incurred": ${ liability2_incurred }
+      - "liability2_due_value": ${ currency(liability2_due_value) }
+      - "liability3_weekly_payment_amount": ${ currency(liability3_weekly_payment_amount) }
+      - "liability3": ${ liability3 }
+      - "liability3_incurred": ${ liability3_incurred }
+      - "liability3_due_value": ${ currency(liability3_due_value) }
+      - "liabilities_total_due_value": ${ currency(liabilities_total_due_value) }
+      - "liabilities_total_weekly_payment_amount": ${ currency(liabilities_total_weekly_payment_amount) }
+      - "attorney_signature_date": ${ attorney_signature_date }
+      - "attorney_bbo_number": ${ attorney_bbo_number }
