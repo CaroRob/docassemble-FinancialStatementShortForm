@@ -53,7 +53,7 @@ setup(name='docassemble.FinancialStatementShortForm',
       url='https://courtformsonline.org',
       packages=find_packages(),
       namespace_packages=['docassemble'],
-      install_requires=['docassemble.ALMassachusetts>=0.1.0', 'docassemble.AssemblyLine>=2.10.1', 'docassemble.MassAccess>=0.2.0'],
+      install_requires=['docassemble.ALMassachusetts>=0.1.0', 'docassemble.AssemblyLine>=2.10.2', 'docassemble.MassAccess>=0.2.0'],
       zip_safe=False,
       package_data=find_package_data(where='docassemble/FinancialStatementShortForm/', package='docassemble.FinancialStatementShortForm'),
      )

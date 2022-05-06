@@ -88,33 +88,35 @@ code: |
     income_too_high
   collect_documents
   legal_court_document_reminder
-  if employment_type['employed']:
-    employers.gather()
+  
+  interest
+  # if employment_type['employed']:
+  #   employers.gather()
   set_progress(11)
-  user_ask_role
-  trial_court.division
-  docket_number
-  plaintiffs.gather()
-  defendants.gather()
-  users.gather()
-  set_parts(subtitle=str(users))
-  set_progress(22)
-  users[0].address.address
-  users[0].phone_number
-  set_progress(33)
-  set_progress(44)
-  signature_date
-  creditors.gather()
+  #  creditors.gather()
+  #  user_ask_role
+  #  trial_court.division
+  #  docket_number
+  #  plaintiffs.gather()
+  #  defendants.gather()
+  #  users.gather()
+  #  set_parts(subtitle=str(users))
+  #  set_progress(22)
+  #  users[0].address.address
+  #  users[0].phone_number
+  #  set_progress(33)
+  #  set_progress(44)
+  #  signature_date
   set_progress(55)
-  attorney_signature_date
-  attorneys.gather()
-  attorneys[0].address.address
+  #  attorney_signature_date
+  #  attorneys.gather()
+  #  attorneys[0].address.address
   set_progress(66)
-  users_social_security_number
+  #  users_social_security_number
   exemptions_federal_income_tax
   assets_real_estate_address
   liability_incurred
-  attorneys[0].phone_number
+  #  attorneys[0].phone_number
   interview_order_Financial_statement_short_form = True
 ---
 ###################### Main order ######################
@@ -299,20 +301,62 @@ fields:
   - "Income  from commissions and bonuses": income_commissions_bonuses_amount
     datatype: currency
     min: 0
+---
+question: |
+  Investment income
+subquestion: |
+  Check the box next to any of the investment income you get.
+fields:
   - "Interest": interest
     datatype: yesno
+  - "How often?": interest_frequency
+    default: 12
+    code: |
+      period_list()
+    show if: interest
+  - "How much?": interest_amount
+    datatype: currency
+    show if: interest
   - "Dividends": dividends
     datatype: yesno
-  - "Income from dividends and interest": income_dividends_interest_amount
+  - "How often?": dividend_frequency
+    default: 12
+    code: |
+      period_list()
+    show if: dividends
+  - "How much?": dividend_amount
     datatype: currency
-    min: 0
+    show if: dividends
   - "Trusts": trusts
     datatype: yesno
+  - "How often?": trust_frequency
+    default: 12
+    code: |
+      period_list()
+    show if: trust
+  - "How much?": trust_amount
+    datatype: currency
+    show if: trust
   - "Annuities": annuities
     datatype: yesno
-  - "Income from trusts and annuities": income_trusts_annuities_amount
+  - "How often?": interest_frequency
+    default: 12
+    code: |
+      period_list()
+    show if: annuities
+  - "How much?": interest_amount
     datatype: currency
-    min: 0
+    show if: annuities
+---
+code: |
+ income_dividends_interest_amount = interest_amount + dividends_amount
+ income_trusts_annuities_amount = trust_amount + annuities_amount
+---
+question: |
+  Retirement income
+subquestion: |
+  Check the box next to any of the retirement income you get.
+fields:
   - "Pensions": pensions
     datatype: yesno
   - "Retirement funds": retirement_funds
@@ -323,6 +367,12 @@ fields:
   - "Social Security": income_social_security_amount
     datatype: currency
     min: 0
+---
+question: |
+  Income you get because you cannot work
+subquestion: |
+  Check the box next to any of the kinds of income you get because you cannot work.
+fields:
   - "Disability": disability
     datatype: yesno
   - "Unemployment Insurance": unemployment_insurance
@@ -332,9 +382,21 @@ fields:
   - "Income from disability, Unemployment and Workers Comp": income_disability_ui_workers_comp_amount
     datatype: currency
     min: 0
+---
+question: |
+  Public benefits income
+subquestion: |
+  Check the box next to any of the public benefits you get.
+fields:
   - "Income from public benefits": income_public_benefits_amount
     datatype: currency
     min: 0
+---
+question: |
+  Support income
+subquestion: |
+  Check the box next to any of the support income you get.
+fields:
   - "Child support": child_support
     datatype: yesno
   - "Alimony actually received": alimony_actually_received
@@ -342,6 +404,12 @@ fields:
   - "Income from child support and alimony": income_child_support_alimony_amount
     datatype: currency
     min: 0
+---
+question: |
+  Other sources of income
+subquestion: |
+  Check the box next to any of these other sources of income you get.
+fields:
   - "Rental income": income_rental_amount
     datatype: currency
     min: 0
@@ -422,6 +490,12 @@ fields:
     min: 0
   - "Years paid into social security": years_paid_into_social_security
     datatype: number
+---
+question: |
+  Expenses
+subquestion: |
+
+fields:
   - "Life insurance": expense_life_insurance_amount
     datatype: currency
     min: 0
@@ -484,9 +558,6 @@ fields:
   - "Clothing": expense_clothing_amount
     datatype: currency
     min: 0
-  - "Total weekly expenses": total_weekly_expenses_amount
-    datatype: currency
-    min: 0
   - "Legal fees": legal_fees_amount
     datatype: currency
     min: 0
@@ -499,10 +570,13 @@ fields:
   - "Legal fees maximum": legal_fees_total_maximum_amount
     datatype: currency
     min: 0
+  - "Total weekly expenses": total_weekly_expenses_amount
+    datatype: currency
+    min: 0
 ---
-id: Screen four
+id: Assets
 question: |
-  Screen four
+  Assets
 fields:
   - "Real estate address": assets_real_estate_address
     maxlength: 60
@@ -579,9 +653,9 @@ fields:
     datatype: currency
     min: 0
 ---
-id: Screen five
+id: Liabilities
 question: |
-  Screen five
+  Liabilities
 fields:
   - "Liability incurred": liability_incurred
     datatype: date
@@ -630,9 +704,9 @@ fields:
     datatype: currency
     min: 0
 ---
-id: Screen six
+id: your attorney
 question: |
-  Screen six
+  Your lawyer
 fields:
   - "Date of attorney signature": attorney_signature_date
     datatype: date
